@@ -1,6 +1,6 @@
 {
   "name": "scriptserver-basics",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Addon for scriptserver with essential server commands like home and tpa",
   "main": "index.js",
   "scripts": {
@@ -17,8 +17,8 @@
   },
   "homepage": "https://github.com/garrettjoecox/scriptserver-basics#readme",
   "dependencies": {
-    "scriptserver-command": "0.0.1",
-    "scriptserver-helpers": "0.0.1",
-    "scriptserver-json": "0.0.1"
+    "scriptserver-command": "0.0.2",
+    "scriptserver-helpers": "0.0.2",
+    "scriptserver-json": "0.0.2"
   }
 }
