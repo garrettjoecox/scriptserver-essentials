@@ -2,12 +2,16 @@
 var ScriptServer = require('scriptserver');
 
 module.exports = function(server) {
-    
+
     server.use([
         'scriptserver-command',
         'scriptserver-json',
         'scriptserver-helpers'
     ]);
+
+    server.command('head', cmd => {
+        server.send(`give ${cmd.sender} minecraft:skull 1 3 {SkullOwner:"${cmd.sender}"}`);
+    });
 
     server.command('tpa', cmd => {
         var tpPlayer;
@@ -18,7 +22,7 @@ module.exports = function(server) {
                 tpPlayer = cmd.args[0];
             })
             .then(d => server.setJSON(tpPlayer, 'tprequest', {
-                type: 'tpa', 
+                type: 'tpa',
                 player: cmd.sender,
                 timestamp: Date.now()
             }))
@@ -36,7 +40,7 @@ module.exports = function(server) {
                 tpPlayer = cmd.args[0];
             })
             .then(d => server.setJSON(tpPlayer, 'tprequest', {
-                type: 'tpahere', 
+                type: 'tpahere',
                 player: cmd.sender,
                 timestamp: Date.now()
             }))
@@ -47,7 +51,7 @@ module.exports = function(server) {
 
     server.command('tpdeny', cmd => {
         var sender, receiver = cmd.sender, type;
-        
+
         server.getJSON(receiver, 'tprequest')
             .then(d => {
                 if (!d || Date.now() - d.timestamp > 120000) throw new Error('You don\'t have a valid teleport request.');
@@ -92,7 +96,7 @@ module.exports = function(server) {
 
     server.command('sethome', cmd => {
         var currentPos;
-        
+
         server.getCoords(cmd.sender)
             .then(d => currentPos = d)
             .then(d => server.setJSON(cmd.sender, 'home', currentPos))
@@ -103,7 +107,7 @@ module.exports = function(server) {
 
     server.command('home', cmd => {
         var home;
-        
+
         server.getJSON(cmd.sender, 'home')
             .then(d => {
               if (!d) throw new Error('You haven\'t set a home yet!');
@@ -117,7 +121,7 @@ module.exports = function(server) {
 
     server.command('spawn', cmd => {
         var spawn;
-        
+
         server.getJSON('world', 'spawn')
             .then(d => {
               if (!d) throw new Error('World spawn hasn\'t been saved yet.');
