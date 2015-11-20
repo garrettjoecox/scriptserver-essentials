@@ -1,6 +1,8 @@
 scriptserver-basics
 ===================
 
+[![](http://i.imgur.com/zhptNme.png)](https://github.com/garrettjoecox/scriptserver)
+
 FYI: This package is an addon for ScriptServer and requires ScriptServer to be set up, please see [here](https://github.com/garrettjoecox/scriptserver) for more information.
 
 ## Installation
