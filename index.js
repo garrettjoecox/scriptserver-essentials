@@ -6,11 +6,35 @@ module.exports = function(server) {
     server.use([
         'scriptserver-command',
         'scriptserver-json',
-        'scriptserver-helpers'
+        'scriptserver-helpers',
+        'scriptserver-event'
     ]);
 
-    server.command('head', cmd => {
-        server.send(`give ${cmd.sender} minecraft:skull 1 3 {SkullOwner:"${cmd.sender}"}`);
+    server.on('login', e => {
+      server.getJSON(e.player, 'hasJoined')
+        .then(flag => {
+          if (flag) return;
+          return server.send(`give ${e.player} minecraft:iron_pickaxe`)
+            .then(() => server.send(`give ${e.player} minecraft:iron_shovel`))
+            .then(() => server.send(`give ${e.player} minecraft:iron_axe`))
+            .then(() => server.send(`give ${e.player} minecraft:iron_sword`))
+            .then(() => server.send(`give ${e.player} minecraft:bed`))
+            .then(() => server.send(`give ${e.player} minecraft:bread 32`))
+            .then(() => server.setJSON(e.player, 'hasJoined', true));
+        });
+    });
+
+    server.command('restart', cmd => {
+        server.isOp(cmd.sender)
+            .then(result => {
+                if (result){
+                    if (cmd.args[0] === 'snapshot' || cmd.args[0] === 'release') server.jar = cmd.args[0];
+                    return server.stop()
+                        .then(() => server.wait(5000))
+                        .then(() => server.start());
+                }
+            })
+            .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
     });
 
     server.command('tpa', cmd => {
