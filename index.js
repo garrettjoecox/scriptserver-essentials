@@ -127,10 +127,21 @@ module.exports = function(server) {
           senderMessage = `tpa accepted, teleporting to ${receiver} in 3 seconds...`;
           receiverMessage = `tpa accepted, teleporting ${sender} here in 3 seconds...`;
           tpCommand = `tp ${sender} ${receiver}`;
+          return server.getCoords(sender);
         } else {
           senderMessage = `tpahere accepted, teleporting ${receiver} here in 3 seconds...`;
           receiverMessage = `tpahere accepted, teleporting to ${sender} in 3 seconds...`;
           tpCommand = `tp ${receiver} ${sender}`;
+          return server.getCoords(receiver);
+        }
+      })
+      .then(coords => {
+        if (type === 'tpa') {
+          coords.dimension = senderDimension;
+          return server.setJSON(sender, 'lastLoc', coords);
+        } else {
+          coords.dimension = receiverDimension;
+          return server.setJSON(receiver, 'lastLoc', coords);
         }
       })
       .then(() => server.tellRaw(senderMessage, sender, {color: 'gray'}))
@@ -141,6 +152,32 @@ module.exports = function(server) {
       .then(() => server.send(`execute ${receiver} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
       .then(() => server.send(`playsound entity.item.pickup ${receiver} ~ ~ ~ 10 1 1`))
       .catch(e => server.tellRaw(e.message, receiver, {color: 'red'}));
+  });
+
+  server.command('back', cmd => {
+    var currentPos, lastLoc, currentDim;
+
+    server.getJSON(cmd.sender, 'lastLoc')
+      .then(result => lastLoc = result)
+      .then(result => {
+        if (!result) throw new Error('No known last location');
+        lastLoc = result;
+        return server.getDimension(cmd.sender);
+      })
+      .then(dim => currentDim = dim)
+      .then(() => {
+        if (currentDim !== lastLoc.dimension) throw new Error(`You can't go back to the ${lastLoc.dimension}`);
+        return server.getCoords(cmd.sender);
+      })
+      .then(coords => {
+        currentPos = coords;
+        currentPos.dimension = currentDim;
+      });
+      .then(() => server.setJSON(cmd.sender, 'lastLoc', currentPos))
+      .then(d => server.send(`tp ${cmd.sender} ${currentPos.x} ${currentPos.y} ${currentPos.z}`))
+      .then(d => server.send(`execute ${cmd.sender} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
+      .then(d => server.send(`playsound entity.item.pickup ${cmd.sender} ~ ~ ~ 10 1 1`))
+      .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
   });
 
   server.command('sethome', cmd => {
@@ -164,6 +201,11 @@ module.exports = function(server) {
       .then(data => {
         if (!data) throw new Error(`You haven't set a home in the ${currentDim} yet!`);
         home = data;
+        return server.getCoords(cmd.sender);
+      })
+      .then(coords => {
+        coords.dimension = currentDim;
+        return server.setJSON(cmd.sender, 'lastLoc', coords);
       })
       .then(d => server.send(`tp ${cmd.sender} ${home.x} ${home.y} ${home.z}`))
       .then(d => server.send(`execute ${cmd.sender} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
@@ -188,13 +230,21 @@ module.exports = function(server) {
   });
 
   server.command('spawn', cmd => {
-    var spawn;
+    var spawn, currentDim;
 
     server.getDimension(cmd.sender)
-      .then(dim => server.getJSON('world', dim + 'spawn'))
+      .then(dim => {
+        currentDim = dim;
+        server.getJSON('world', dim + 'spawn')
+      })
       .then(loc => {
         if (!loc) throw new Error('Spawn hasnt been set in this dimension yet');
         spawn = loc;
+        return server.getCoords(cmd.sender);
+      })
+      .then(coords => {
+        coords.dimension = currentDim;
+        return server.setJSON(cmd.sender, 'lastLoc', coords);
       })
       .then(() => server.send(`tp ${cmd.sender} ${spawn.x} ${spawn.y} ${spawn.z}`))
       .then(() => server.send(`execute ${cmd.sender} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
