@@ -235,7 +235,7 @@ module.exports = function(server) {
     server.getDimension(cmd.sender)
       .then(dim => {
         currentDim = dim;
-        server.getJSON('world', currentDim + 'spawn')
+        return server.getJSON('world', currentDim + 'spawn')
       })
       .then(loc => {
         if (!loc) throw new Error('Spawn hasnt been set in this dimension yet');
