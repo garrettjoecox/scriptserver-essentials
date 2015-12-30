@@ -172,9 +172,9 @@ module.exports = function(server) {
       .then(coords => {
         currentPos = coords;
         currentPos.dimension = currentDim;
-      });
+      })
       .then(() => server.setJSON(cmd.sender, 'lastLoc', currentPos))
-      .then(d => server.send(`tp ${cmd.sender} ${currentPos.x} ${currentPos.y} ${currentPos.z}`))
+      .then(d => server.send(`tp ${cmd.sender} ${lastLoc.x} ${lastLoc.y} ${lastLoc.z}`))
       .then(d => server.send(`execute ${cmd.sender} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
       .then(d => server.send(`playsound entity.item.pickup ${cmd.sender} ~ ~ ~ 10 1 1`))
       .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
@@ -235,7 +235,7 @@ module.exports = function(server) {
     server.getDimension(cmd.sender)
       .then(dim => {
         currentDim = dim;
-        server.getJSON('world', dim + 'spawn')
+        server.getJSON('world', currentDim + 'spawn')
       })
       .then(loc => {
         if (!loc) throw new Error('Spawn hasnt been set in this dimension yet');
