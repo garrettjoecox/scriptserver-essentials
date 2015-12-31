@@ -103,7 +103,7 @@ module.exports = function(server) {
   });
 
   server.command('tpaccept', cmd => {
-    var sender, receiver = cmd.sender, type, tpCommand, senderMessage, receiverMessage;
+    var sender, receiver = cmd.sender, type, tpCommand, senderMessage, receiverMessage, senderDimension, receiverDimension;
 
     server.getJSON(receiver, 'tprequest')
       .then(tprequest => {
@@ -116,11 +116,11 @@ module.exports = function(server) {
         if (!isOnline) throw new Error(`${sender} is not online`);
       })
       .then(() => server.getDimension(sender))
-      .then(senderDimension => {
-        return server.getDimension(receiver)
-          .then(receiverDimension => {
-            if (senderDimension !== receiverDimension) throw new Error(`You cannot accept a teleport across dimensions, ${sender} is in the ${senderDimension}`);
-          });
+      .then(sd => senderDimension = sd)
+      .then(() => server.getDimension(receiver))
+      .then(rd => receiverDimension = rd)
+      .then(() => {
+        if (senderDimension !== receiverDimension) throw new Error(`You cannot accept a teleport across dimensions, ${sender} is in the ${senderDimension}`);
       })
       .then(() => {
         if (type === 'tpa') {
@@ -235,7 +235,8 @@ module.exports = function(server) {
     server.getDimension(cmd.sender)
       .then(dim => {
         currentDim = dim;
-        return server.getJSON('world', currentDim + 'spawn')
+        return server.getJSON('world', c
+        urrentDim + 'spawn')
       })
       .then(loc => {
         if (!loc) throw new Error('Spawn hasnt been set in this dimension yet');
