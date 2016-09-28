@@ -1,254 +1,248 @@
+'use strict';
 
-var ScriptServer = require('scriptserver');
+module.exports = function() {
 
-module.exports = function(server) {
+  // Setup
 
-  server.use([
-    'scriptserver-command',
-    'scriptserver-json',
-    'scriptserver-helpers',
-    'scriptserver-event'
-  ]);
+  const server = this;
+  const lastLocations = {};
+  const tpRequests = {};
 
-  server.on('login', e => {
-    server.getJSON(e.player, 'joinDate')
+  server.use(require('scriptserver-event'));
+  server.use(require('scriptserver-command'));
+  server.use(require('scriptserver-json'));
+  server.use(require('scriptserver-util'));
+
+  server.config.essentials = Object.assign({}, {
+    starterKit: [
+      'iron_pickaxe',
+      'iron_shovel',
+      'iron_axe',
+      'iron_sword',
+      'bed',
+      'bread 32'
+    ]
+  }, server.config.essentials);
+
+  // Starting Kit & Login Messages
+
+  server.on('login', event => {
+    server.JSON.get(event.player, 'joined')
       .then(hasJoined => {
-        if (!hasJoined) return server.tellRaw(`Welcome to the server, ${e.player}!`, e.player, {color: 'yellow'})
-          .then(() => server.send(`give ${e.player} minecraft:iron_pickaxe`))
-          .then(() => server.send(`give ${e.player} minecraft:iron_shovel`))
-          .then(() => server.send(`give ${e.player} minecraft:iron_axe`))
-          .then(() => server.send(`give ${e.player} minecraft:iron_sword`))
-          .then(() => server.send(`give ${e.player} minecraft:bed`))
-          .then(() => server.send(`give ${e.player} minecraft:bread 32`))
-          .then(() => server.setJSON(e.player, 'joinDate', Date.now()));
-        else return server.tellRaw(`Welcome back, ${e.player}!`, e.player, {color: 'yellow'});
-      })
-      .catch(e => server.tellRaw(e.message, e.player, {color: 'red'}));
-  });
-
-  server.command('restart', cmd => {
-    server.isOp(cmd.sender)
-      .then(result => {
-        if (!result) throw new Error('You don\'t have permission to do this!');
-      })
-      .then(() => server.stop())
-      .then(() => server.wait(5000))
-      .then(() => server.start())
-      .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
-  });
-
-  server.command('tpa', cmd => {
-    if (!cmd.args[0]) return server.tellRaw('Please specify a player', cmd.sender, {color: 'red'});
-    var tpPlayer = cmd.args[0];
-
-    server.isOnline(tpPlayer)
-      .then(isOnline => {
-        if (!isOnline) throw new Error(`${tpPlayer} is not online`);
-      })
-      .then(() => server.getDimension(tpPlayer))
-      .then(tpPlayerDimension => {
-        return server.getDimension(cmd.sender)
-          .then(senderDimension => {
-            if (tpPlayerDimension !== senderDimension) throw new Error(`You cannot request a teleport across dimensions, ${tpPlayer} is in the ${tpPlayerDimension}`);
-          });
-      })
-      .then(() => server.setJSON(tpPlayer, 'tprequest', {
-        type: 'tpa',
-        player: cmd.sender,
-        timestamp: Date.now()
-      }))
-      .then(() => server.tellRaw(`tpa sent to ${tpPlayer}, expires in 2 minutes`, cmd.sender, {color: 'gray'}))
-      .then(() => server.tellRaw(`tpa received from ${cmd.sender}, use ~tpaccept or ~tpdeny, expires in 2 minutes`, tpPlayer, {color: 'gray'}))
-      .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
-  });
-
-  server.command('tpahere', cmd => {
-    if (!cmd.args[0]) return server.tellRaw('Please specify a player', cmd.sender, {color: 'red'});
-    var tpPlayer = cmd.args[0];
-
-    server.isOnline(tpPlayer)
-      .then(isOnline => {
-        if (!isOnline) throw new Error(`${tpPlayer} is not online`);
-      })
-      .then(() => server.getDimension(tpPlayer))
-      .then(tpPlayerDimension => {
-        return server.getDimension(cmd.sender)
-          .then(senderDimension => {
-            if (tpPlayerDimension !== senderDimension) throw new Error(`You cannot request a teleport across dimensions, ${tpPlayer} is in the ${tpPlayerDimension}`);
-          });
-      })
-      .then(() => server.setJSON(tpPlayer, 'tprequest', {
-        type: 'tpahere',
-        player: cmd.sender,
-        timestamp: Date.now()
-      }))
-      .then(() => server.tellRaw(`tpa sent to ${tpPlayer}, expires in 2 minutes`, cmd.sender, {color: 'gray'}))
-      .then(() => server.tellRaw(`tpa received from ${cmd.sender}, use ~tpaccept or ~tpdeny, expires in 2 minutes`, tpPlayer, {color: 'gray'}))
-      .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
-  });
-
-  server.command('tpdeny', cmd => {
-    var sender, receiver = cmd.sender, type;
-
-    server.getJSON(receiver, 'tprequest')
-      .then(tprequest => {
-        if (!tprequest || Date.now() - tprequest.timestamp > 120000) throw new Error('You don\'t have a valid teleport request');
-        sender = tprequest.player;
-        type = tprequest.type;
-      })
-      .then(() => server.tellRaw(`${type} to ${receiver} denied`, sender, {color: 'gray'}))
-      .then(() => server.tellRaw(`${type} from ${sender} denied`, receiver, {color: 'gray'}))
-      .then(() => server.setJSON(receiver, 'tprequest'), null)
-      .catch(e => server.tellRaw(e.message, receiver, {color: 'red'}));
-  });
-
-  server.command('tpaccept', cmd => {
-    var sender, receiver = cmd.sender, type, tpCommand, senderMessage, receiverMessage, senderDimension, receiverDimension;
-
-    server.getJSON(receiver, 'tprequest')
-      .then(tprequest => {
-        if (!tprequest || Date.now() - tprequest.timestamp > 120000) throw new Error('You don\'t have a valid teleport request.');
-        sender = tprequest.player;
-        type = tprequest.type;
-      })
-      .then(() => server.isOnline(sender))
-      .then(isOnline => {
-        if (!isOnline) throw new Error(`${sender} is not online`);
-      })
-      .then(() => server.getDimension(sender))
-      .then(sd => senderDimension = sd)
-      .then(() => server.getDimension(receiver))
-      .then(rd => receiverDimension = rd)
-      .then(() => {
-        if (senderDimension !== receiverDimension) throw new Error(`You cannot accept a teleport across dimensions, ${sender} is in the ${senderDimension}`);
-      })
-      .then(() => {
-        if (type === 'tpa') {
-          senderMessage = `tpa accepted, teleporting to ${receiver} in 3 seconds...`;
-          receiverMessage = `tpa accepted, teleporting ${sender} here in 3 seconds...`;
-          tpCommand = `tp ${sender} ${receiver}`;
-          return server.getCoords(sender);
+        if (!hasJoined) {
+          return server.util.tellRaw(`Welcome to the server, ${event.player}!`, event.player, { color: 'yellow' })
+            .then(() => Promise.all(server.config.essentials.starterKit.map(item => server.send(`give ${event.player} minecraft:${item}`))))
+            .then(() => server.JSON.set(event.player, 'joined', Date.now()));
         } else {
-          senderMessage = `tpahere accepted, teleporting ${receiver} here in 3 seconds...`;
-          receiverMessage = `tpahere accepted, teleporting to ${sender} in 3 seconds...`;
-          tpCommand = `tp ${receiver} ${sender}`;
-          return server.getCoords(receiver);
+          return server.util.tellRaw(`Welcome back, ${event.player}!`, event.player, { color: 'yellow' });
         }
       })
-      .then(coords => {
-        if (type === 'tpa') {
-          coords.dimension = senderDimension;
-          return server.setJSON(sender, 'lastLoc', coords);
-        } else {
-          coords.dimension = receiverDimension;
-          return server.setJSON(receiver, 'lastLoc', coords);
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
+  });
+
+  // Home & Setting Home
+
+  server.command('sethome', event => {
+    let currentLoc;
+
+    server.util.getLocation(event.player)
+      .then(loc => currentLoc = loc)
+      .then(() => server.JSON.get(event.player, 'home'))
+      .then((homes = {}) => {
+        homes[currentLoc.dimension] = currentLoc;
+        return server.JSON.set(event.player, 'home', homes);
+      })
+      .then(() => server.util.tellRaw(`Home set in ${currentLoc.dimension}!`, event.player, { color: 'gray' }))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
+  });
+
+  server.command('home', event => {
+    let currentLoc;
+
+    server.util.getLocation(event.player)
+      .then(loc => currentLoc = loc)
+      .then(() => server.JSON.get(event.player, 'home'))
+      .then((homes = {}) => {
+        if (!homes.hasOwnProperty(currentLoc.dimension)) return Promise.reject(new Error(`You haven't set a home in the ${currentLoc.dimension} yet!`));
+        else {
+          lastLocations[event.player] = currentLoc;
+          return server.send(`tp ${event.player} ${homes[currentLoc.dimension].x} ${homes[currentLoc.dimension].y} ${homes[currentLoc.dimension].z}`);
         }
       })
-      .then(() => server.tellRaw(senderMessage, sender, {color: 'gray'}))
-      .then(() => server.tellRaw(receiverMessage, receiver, {color: 'gray'}))
-      .then(() => server.setJSON(receiver, 'tprequest'), null)
-      .then(() => server.wait(4000))
-      .then(() => server.send(tpCommand))
-      .then(() => server.send(`execute ${receiver} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
-      .then(() => server.send(`playsound entity.item.pickup ${receiver} ~ ~ ~ 10 1 1`))
-      .catch(e => server.tellRaw(e.message, receiver, {color: 'red'}));
+      .then(() => server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
+      .then(() => server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
   });
 
-  server.command('back', cmd => {
-    var currentPos, lastLoc, currentDim;
+  // Spawn & Setting Spawn
 
-    server.getJSON(cmd.sender, 'lastLoc')
-      .then(result => lastLoc = result)
-      .then(result => {
-        if (!result) throw new Error('No known last location');
-        lastLoc = result;
-        return server.getDimension(cmd.sender);
+  server.command('setspawn', event => {
+    let currentLoc;
+
+    server.util.isOp(event.player)
+      .then(result => result ? null : Promise.reject(new Error('You need to be op to set the spawn')))
+      .then(() => server.util.getLocation(event.player))
+      .then(loc => currentLoc = loc)
+      .then(() => server.JSON.get('world', 'spawn'))
+      .then((spawns = {}) => {
+        spawns[currentLoc.dimension] = currentLoc;
+        return server.JSON.set('world', 'spawn', spawns);
       })
-      .then(dim => currentDim = dim)
+      .then(() => server.util.tellRaw(`${currentLoc.dimension} spawn set!`, event.player, { color: 'gray' }))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
+  });
+
+  server.command('spawn', event => {
+    let currentLoc;
+
+    server.util.getLocation(event.player)
+      .then(loc => currentLoc = loc)
+      .then(() => server.JSON.get('world', 'spawn'))
+      .then((spawns = {}) => {
+        if (!spawns.hasOwnProperty(currentLoc.dimension)) return Promise.reject(new Error(`Spawn hasn't been set in the ${currentLoc.dimension} yet!`));
+        else {
+          lastLocations[event.player] = currentLoc;
+          return server.send(`tp ${event.player} ${spawns[currentLoc.dimension].x} ${spawns[currentLoc.dimension].y} ${spawns[currentLoc.dimension].z}`);
+        }
+      })
+      .then(() => server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
+      .then(() => server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
+  });
+
+  // Teleport Requests
+
+  server.command('tpa', event => {
+    const toPlayer = event.args[0];
+    const fromPlayer = event.player;
+
+    Promise.resolve()
       .then(() => {
-        if (currentDim !== lastLoc.dimension) throw new Error(`You can't go back to the ${lastLoc.dimension}`);
-        return server.getCoords(cmd.sender);
+        if (!toPlayer) return Promise.reject(new Error('Please specify a player'));
+        return server.util.isOnline(toPlayer);
       })
-      .then(coords => {
-        currentPos = coords;
-        currentPos.dimension = currentDim;
+      .then(isOnline => isOnline ? null : Promise.reject(new Error(`${toPlayer} is not online`)))
+      .then(() => server.util.getLocation(fromPlayer))
+      .then(fromLoc => {
+        return server.util.getLocation(toPlayer)
+          .then(toLoc => {
+            if (fromLoc.dimension !== toLoc.dimension) return Promise.reject(new Error(`Cannot teleport across dimensions, ${toPlayer} is in the ${toLoc.dimension}`));
+          });
       })
-      .then(() => server.setJSON(cmd.sender, 'lastLoc', currentPos))
-      .then(d => server.send(`tp ${cmd.sender} ${lastLoc.x} ${lastLoc.y} ${lastLoc.z}`))
-      .then(d => server.send(`execute ${cmd.sender} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
-      .then(d => server.send(`playsound entity.item.pickup ${cmd.sender} ~ ~ ~ 10 1 1`))
-      .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
+      .then(() => {
+        tpRequests[toPlayer] = {
+          type: 'tpa',
+          player: fromPlayer,
+          timestamp: Date.now()
+        }
+      })
+      .then(() => server.util.tellRaw(`tpa sent to ${toPlayer}, expires in 2 minutes`, fromPlayer, { color: 'gray' }))
+      .then(() => server.util.tellRaw(`tpa received from ${fromPlayer}, use ~tpaccept or ~tpdeny, expires in 2 minutes`, toPlayer, { color: 'gray' }))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
   });
 
-  server.command('sethome', cmd => {
-    var currentPos, currentDim;
+  server.command('tpahere', event => {
+    const toPlayer = event.args[0];
+    const fromPlayer = event.player;
 
-    server.getDimension(cmd.sender)
-      .then(dim => currentDim = dim)
-      .then(() => server.getCoords(cmd.sender))
-      .then(pos => currentPos = pos)
-      .then(() => server.setJSON(cmd.sender, currentDim + 'home', currentPos))
-      .then(() => server.tellRaw(`Home set in ${currentDim}!`, cmd.sender, {color: 'gray'}))
-      .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
+    Promise.resolve()
+      .then(() => {
+        if (!toPlayer) return Promise.reject(new Error('Please specify a player'));
+        return server.util.isOnline(toPlayer);
+      })
+      .then(isOnline => isOnline ? null : Promise.reject(new Error(`${toPlayer} is not online`)))
+      .then(() => server.util.getLocation(fromPlayer))
+      .then(fromLoc => {
+        return server.util.getLocation(toPlayer)
+          .then(toLoc => {
+            if (fromLoc.dimension !== toLoc.dimension) return Promise.reject(new Error(`Cannot teleport across dimensions, ${toPlayer} is in the ${toLoc.dimension}`));
+          });
+      })
+      .then(() => {
+        tpRequests[toPlayer] = {
+          type: 'tpahere',
+          player: fromPlayer,
+          timestamp: Date.now()
+        }
+      })
+      .then(() => server.util.tellRaw(`tpahere sent to ${toPlayer}, expires in 2 minutes`, fromPlayer, { color: 'gray' }))
+      .then(() => server.util.tellRaw(`tpahere received from ${fromPlayer}, use ~tpaccept or ~tpdeny, expires in 2 minutes`, toPlayer, { color: 'gray' }))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
   });
 
-  server.command('home', cmd => {
-    var home, currentDim;
+  server.command('tpdeny', event => {
+    const req = tpRequests[event.player];
 
-    server.getDimension(cmd.sender)
-      .then(dim => currentDim = dim)
-      .then(() => server.getJSON(cmd.sender, currentDim + 'home'))
-      .then(data => {
-        if (!data) throw new Error(`You haven't set a home in the ${currentDim} yet!`);
-        home = data;
-        return server.getCoords(cmd.sender);
+    Promise.resolve()
+      .then(() => (!req || Date.now() - req.timestamp > 120000) ? Promise.reject(new Error('You don\'t have a valid tp request')) : null)
+      .then(() => {
+        delete tpRequests[event.player];
       })
-      .then(coords => {
-        coords.dimension = currentDim;
-        return server.setJSON(cmd.sender, 'lastLoc', coords);
-      })
-      .then(d => server.send(`tp ${cmd.sender} ${home.x} ${home.y} ${home.z}`))
-      .then(d => server.send(`execute ${cmd.sender} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
-      .then(d => server.send(`playsound entity.item.pickup ${cmd.sender} ~ ~ ~ 10 1 1`))
-      .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
+      .then(() => server.util.tellRaw(`${req.type} to ${event.player} denied`, req.player, { color: 'gray' }))
+      .then(() => server.util.tellRaw(`${req.type} from ${req.player} denied`, event.player, { color: 'gray' }))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
   });
 
-  server.command('setspawn', cmd => {
-    var currentPos, currentDim;
+  server.command('tpaccept', event => {
+    const req = tpRequests[event.player];
+    const t = { player: event.player };
+    const f = { player: req.player };
 
-    server.isOp(cmd.sender)
-      .then(result => {
-        if (!result) throw new Error('You don\'t have permission to do this!');
+    Promise.resolve()
+      .then(() => (!req || Date.now() - req.timestamp > 120000) ? Promise.reject(new Error('You don\'t have a valid tp request')) : null)
+      .then(() => server.util.getLocation(t.player))
+      .then(loc => t.loc = loc)
+      .then(() => server.util.getLocation(f.player))
+      .then(loc => f.loc = loc)
+      .then(() => {
+        if (t.loc.dimension !== f.loc.dimension) return Promise.reject(new Error(`Cannot teleport across dimensions, ${f.player} is in the ${f.loc.dimension}`));
+        else {
+          if (req.type === 'tpa') {
+            t.message = `tpa accepted, teleporting ${f.player} here in 3 seconds...`;
+            f.message = `tpa accepted, teleporting to ${t.player} in 3 seconds...`;
+            req.command = `tp ${f.player} ${t.player}`;
+            lastLocations[f.player] = f.loc;
+          } else {
+            t.message = `tpahere accepted, teleporting to ${f.player} in 3 seconds...`;
+            f.message = `tpahere accepted, teleporting ${t.player} here in 3 seconds...`;
+            req.command = `tp ${t.player} ${f.player}`;
+            lastLocations[t.player] = t.loc;
+          }
+        }
       })
-      .then(() => server.getDimension(cmd.sender))
-      .then(dim => currentDim = dim)
-      .then(() => server.getCoords(cmd.sender))
-      .then(pos => currentPos = pos)
-      .then(() => server.setJSON('world', currentDim + 'spawn', currentPos))
-      .then(() => server.tellRaw(`${currentDim} spawn set!`, cmd.sender, {color: 'gray'}))
-      .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
+      .then(() => server.util.tellRaw(t.message, t.player, { color: 'gray' }))
+      .then(() => server.util.tellRaw(f.message, f.player, { color: 'gray' }))
+      .then(() => server.util.wait(4000))
+      .then(() => server.send(req.command))
+      .then(() => server.send(`execute ${req.type === 'tpa' ? f.player : t.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
+      .then(() => server.send(`playsound entity.item.pickup master ${req.type === 'tpa' ? f.player : t.player} ~ ~ ~ 10 1 1`))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
   });
 
-  server.command('spawn', cmd => {
-    var spawn, currentDim;
+  // Back
 
-    server.getDimension(cmd.sender)
-      .then(dim => {
-        currentDim = dim;
-        return server.getJSON('world', currentDim + 'spawn')
+  server.command('back', event => {
+    let currentLoc, lastLoc;
+
+    Promise.resolve()
+      .then(() => {
+        if (!lastLocations.hasOwnProperty(event.player)) return Promise.reject(new Error('No known last location'));
+        else {
+          lastLoc = lastLocations[event.player];
+          return server.util.getLocation(event.player)
+        }
       })
-      .then(loc => {
-        if (!loc) throw new Error('Spawn hasnt been set in this dimension yet');
-        spawn = loc;
-        return server.getCoords(cmd.sender);
+      .then(loc => currentLoc = loc)
+      .then(() => {
+        if (lastLoc.dimension !== currentLoc.dimension) return Promise.reject(new Error(`Last known location in ${lastLoc.dimension}, can't do that.`));
+        else {
+          lastLocations[event.player] = currentLoc;
+          return server.send(`tp ${event.player} ${lastLoc.x} ${lastLoc.y} ${lastLoc.z}`);
+        }
       })
-      .then(coords => {
-        coords.dimension = currentDim;
-        return server.setJSON(cmd.sender, 'lastLoc', coords);
-      })
-      .then(() => server.send(`tp ${cmd.sender} ${spawn.x} ${spawn.y} ${spawn.z}`))
-      .then(() => server.send(`execute ${cmd.sender} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
-      .then(() => server.send(`playsound entity.item.pickup ${cmd.sender} ~ ~ ~ 10 1 1`))
-      .catch(e => server.tellRaw(e.message, cmd.sender, {color: 'red'}));
+      .then(d => server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
+      .then(d => server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
   });
-};
+
+}

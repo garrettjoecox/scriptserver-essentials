@@ -1,26 +1,23 @@
 {
-  "name": "scriptserver-basics",
-  "version": "0.0.12",
+  "name": "scriptserver-essentials",
+  "version": "0.1.0",
   "description": "Addon for scriptserver with essential server commands like home and tpa",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/garrettjoecox/scriptserver-basics.git"
+    "url": "git+https://github.com/garrettjoecox/scriptserver-essentials.git"
   },
   "author": "Garrett Cox <garrettjcox@gmail.com> (http://garrettcox.io)",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/garrettjoecox/scriptserver-basics/issues"
+    "url": "https://github.com/garrettjoecox/scriptserver-essentials/issues"
   },
-  "homepage": "https://github.com/garrettjoecox/scriptserver-basics#readme",
+  "homepage": "https://github.com/garrettjoecox/scriptserver-essentials#readme",
   "dependencies": {
-    "scriptserver": "*",
     "scriptserver-command": "*",
     "scriptserver-event": "*",
-    "scriptserver-helpers": "*",
+    "scriptserver-util": "*",
     "scriptserver-json": "*"
   }
 }

@@ -1,4 +1,4 @@
-scriptserver-basics
+scriptserver-essentials
 ===================
 
 [![](http://i.imgur.com/zhptNme.png)](https://github.com/garrettjoecox/scriptserver)
@@ -8,18 +8,15 @@ FYI: This package is an addon for ScriptServer and requires ScriptServer to be s
 ## Installation
 While in root directory of your server run:
 ```
-npm install scriptserver-basics
+npm install scriptserver-essentials
 ```
 And in your `server` file:
 ```javascript
-server.use('scriptserver-basics');
+server.use(require('scriptserver-essentials'));
 ```
 
 ## Usage
 This module provides the following commands to be used in the ingame chat:
-
-- `~head [username]`
-  Gives command sender's or [username]'s playerhead to command sender.
 
 - `~tpa <username>`
   Sends [username] a teleport request.
@@ -34,15 +31,19 @@ This module provides the following commands to be used in the ingame chat:
   Deny your current teleport request.
 
 - `~sethome`
-  Set your home at the current position.
+  Set your home at the current position for the current dimension, allowed one home per dimension.
 
 - `~home`
-  Teleport to your saved home position.
+  Teleport to your saved home position in current dimension.
+
+- `~setspawn`
+  Set current dimension's spawn. Allowed a spawn per dimension. (OP only)
 
 - `~spawn`
-  Teleport to world spawn.
+  Teleport to current dimension's spawn.
 
 ## This ScriptServer module uses:
   - [scriptserver-command](https://github.com/garrettjoecox/scriptserver-command)
-  - [scriptserver-helpers](https://github.com/garrettjoecox/scriptserver-helpers)
+  - [scriptserver-util](https://github.com/garrettjoecox/scriptserver-util)
+  - [scriptserver-event](https://github.com/garrettjoecox/scriptserver-event)
   - [scriptserver-json](https://github.com/garrettjoecox/scriptserver-json)
