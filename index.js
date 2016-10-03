@@ -219,6 +219,47 @@ module.exports = function() {
       .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
   });
 
+  server.command('setwarp', event => {
+    let currentLoc;
+    let warpName = event.args[0];
+
+    server.util.isOp(event.player)
+      .then(result => result ? null : Promise.reject(new Error('You need to be op to create a warp')))
+      .then(() => server.util.getLocation(event.player))
+      .then(loc => currentLoc = loc)
+      .then(() => server.JSON.get('world', 'warps'))
+      .then((warps = {}) => {
+        warps[currentLoc.dimension] = warps[currentLoc.dimension] || {};
+        warps[currentLoc.dimension][warpName] = currentLoc;
+        return server.JSON.set('world', 'warps', warps);
+      })
+      .then(() => server.util.tellRaw(`${warpName} warp set!`, event.player, { color: 'gray' }))
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
+  });
+
+  server.command('warp', event => {
+    let currentLoc;
+    let warpName = event.args[0];
+
+    server.util.getLocation(event.player)
+      .then(loc => currentLoc = loc)
+      .then(() => server.JSON.get('world', 'warps'))
+      .then((warps = {}) => {
+        if (!warps.hasOwnProperty(currentLoc.dimension)) return Promise.reject(new Error(`A warp hasn't been set in the ${currentLoc.dimension} yet!`));
+        if (!warpName) {
+          let warpList = Object.keys(warps[currentLoc.dimension]).join(', ');
+          return server.util.tellRaw(`Warps available in the ${currentLoc.dimension}: ` + warpList, event.player, { color: 'gray' });
+        } else if (!warps[currentLoc.dimension].hasOwnProperty(warpName))return Promise.reject(new Error(`A warp named ${warpName} doesn't exist in the ${currentLoc.dimension}`));
+        else {
+          lastLocations[event.player] = currentLoc;
+          return server.send(`tp ${event.player} ${warps[currentLoc.dimension][warpName].x} ${warps[currentLoc.dimension][warpName].y} ${warps[currentLoc.dimension][warpName].z}`)
+            .then(() => server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`))
+            .then(() => server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`))
+        }
+      })
+      .catch(e => server.util.tellRaw(e.message, event.player, { color: 'red' }));
+  });
+
   // Back
 
   server.command('back', event => {

@@ -1,6 +1,6 @@
 {
   "name": "scriptserver-essentials",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Addon for scriptserver with essential server commands like home and tpa",
   "main": "index.js",
   "scripts": {},
