@@ -79,7 +79,7 @@ module.exports = function() {
       } else {
         await server.JSON.set(event.player, 'joined', Date.now());
 
-        if (config.starterKit.enabled) await Promise.all(config.starterKit.items.map(i => server.send(`give ${event.player} minecraft:${item}`)));
+        if (config.starterKit.enabled) await Promise.all(config.starterKit.items.map(i => server.send(`give ${event.player} minecraft:${i}`)));
         if (config.motd.enabled) await server.util.tellRaw(_.template(config.motd.first)(event), event.player, { color: 'yellow' });
       }
     } catch(e) { handler(e, event.player); }
@@ -168,7 +168,7 @@ module.exports = function() {
     try {
       if (!config.spawn) throw new PlayerError('Spawn is not enabled on this server');
       const location = await server.util.getLocation(event.player);
-      const spawns = await server.JSON.get('world', 'spawn');
+      const spawns = await server.JSON.get('world', 'spawn') || {};
 
       if (!spawns.hasOwnProperty(location.dimension)) throw new PlayerError(`Spawn has not been set in the ${location.dimension} yet`);
 
