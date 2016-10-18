@@ -15,14 +15,85 @@ And in your `server` file:
 server.use(require('scriptserver-essentials'));
 ```
 
+## Configuration
+Each feature is configuration driven, pass in a configuration object as the third argument of your Scriptserver before requiring `scriptserver-esssentials`
+
+The following is the default configuration:
+```javascript
+const server = new ScriptServer('snapshot', ['-Xmx2048'], {
+  essentials: {
+    motd: {
+      enabled: true,
+      first: 'Welcome to the server, ${player}!',
+      text: 'Welcome back ${player}!'
+    },
+    starterKit: {
+      enabled: true,
+      items: [
+        'iron_pickaxe',
+        'iron_shovel',
+        'iron_axe',
+        'iron_sword',
+        'bed',
+        'bread 32',
+      ]
+    },
+    home: {
+      enabled: true,
+      amount: 3
+    },
+    spawn: true,
+    warp: {
+      enabled: true,
+      opOnly: true
+    },
+    tpa: true,
+    back: true,
+    day: {
+      enabled: true,
+      percent: 50
+    },
+    night: {
+      enabled: true,
+      percent: 50
+    },
+    weather: {
+      enabled: true,
+      percent: 50
+    }
+  }
+});
+```
+
 ## Usage
 This module provides the following commands to be used in the ingame chat:
 
+- `~sethome [name]`
+  Set a home (optionally with a name, if multiple homes are enabled) in your current dimension
+
+- `~delhome [name]`
+  Remove a home (optionally with a name, if multiple homes are enabled) in your current dimension (Useful for limited amount of homes)
+
+- `~home [name]`
+  Teleport to a home (optionally with a name, if multiple homes are enabled) in your current dimension
+
+- `~setspawn`
+  Set the spawn in your current dimension (requires OP)
+
+- `~spawn`
+  Teleport to spawn in your current dimension
+
+- `~setwarp <name>`
+  Set a warp point specified by `name` in current dimension (Optionally requires OP)
+
+- `~delwarp <name>`
+  Remove the specified warp in current dimension (Optionally requires OP)
+
 - `~tpa <username>`
-  Sends [username] a teleport request.
+  Sends a teleport request to the specified user
 
 - `~tpahere <username>`
-  Sends [username] a request to teleport here.
+  Sends a teleport here request to the specifed user
 
 - `~tpaccept`
   Accept your current teleport request.
@@ -30,26 +101,8 @@ This module provides the following commands to be used in the ingame chat:
 - `~tpdeny`
   Deny your current teleport request.
 
-- `~sethome`
-  Set your home at the current position for the current dimension, allowed one home per dimension.
-
-- `~home`
-  Teleport to your saved home position in current dimension.
-
-- `~setspawn`
-  Set current dimension's spawn. Allowed a spawn per dimension. (OP only)
-
-- `~spawn`
-  Teleport to current dimension's spawn.
-
-- `~setwarp <warpname>`
-  Set a warp point in current dimension.
-  
-- `~warp <warpname>`
-  Warp to a warp point in current dimension.
-
 - `~back`
-  Teleport back to a previous location
+  Teleport back to a previous location (Remembers location from `spawn`, `tpa`, `warp`, and `home`)
 
 ## This ScriptServer module uses:
   - [scriptserver-command](https://github.com/garrettjoecox/scriptserver-command)
