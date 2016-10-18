@@ -42,6 +42,12 @@ This module provides the following commands to be used in the ingame chat:
 - `~spawn`
   Teleport to current dimension's spawn.
 
+- `~setwarp <warpname>`
+  Set a warp point in current dimension.
+  
+- `~warp <warpname>`
+  Warp to a warp point in current dimension.
+
 ## This ScriptServer module uses:
   - [scriptserver-command](https://github.com/garrettjoecox/scriptserver-command)
   - [scriptserver-util](https://github.com/garrettjoecox/scriptserver-util)
