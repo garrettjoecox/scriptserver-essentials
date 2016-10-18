@@ -48,6 +48,9 @@ This module provides the following commands to be used in the ingame chat:
 - `~warp <warpname>`
   Warp to a warp point in current dimension.
 
+- `~back`
+  Teleport back to a previous location
+
 ## This ScriptServer module uses:
   - [scriptserver-command](https://github.com/garrettjoecox/scriptserver-command)
   - [scriptserver-util](https://github.com/garrettjoecox/scriptserver-util)
