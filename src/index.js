@@ -144,6 +144,7 @@ module.exports = function() {
       await server.send(`tp ${event.player} ${homes[location.dimension][home].x} ${homes[location.dimension][home].y} ${homes[location.dimension][home].z}`);
       await server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`);
       await server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`);
+      await server.util.tellRaw('You\'ve been teleported home.', event.player, {color: 'gray'});
 
     } catch(e) { handler(e, event.player); }
   });
