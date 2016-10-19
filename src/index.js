@@ -222,20 +222,24 @@ module.exports = function() {
   server.command('warp', async (event) => {
     try {
       if (!config.warp.enabled) throw new PlayerError('Warps are not enabled on this server');
-      if (!event.args[0]) throw new PlayerError('Please provide the name of the warp to teleport to');
-      const warp = event.args[0];
       const location = await server.util.getLocation(event.player);
       const warps = await server.JSON.get('world', 'warp');
 
-      if (!warps) throw new PlayerError(`You haven't set a warp yet`);
-      if (!warps.hasOwnProperty(location.dimension)) throw new PlayerError(`You haven't set a warp in the ${location.dimension} yet`);
-      if (!warps[location.dimension].hasOwnProperty(warp)) throw new PlayerError(`You haven't set a warp ${warp} in the ${location.dimension}`);
+      if (!warps) throw new PlayerError(`No warps have been created yet`);
+      if (!warps.hasOwnProperty(location.dimension)) throw new PlayerError(`No warps have been created in the ${location.dimension}`);
+      if (!event.args[0]) {
+        let warpList = Object.keys(warps[location.dimension]).join(', ');
 
-      lastLocations[event.player] = location;
-      await server.send(`tp ${event.player} ${warps[location.dimension][warp].x} ${warps[location.dimension][warp].y} ${warps[location.dimension][warp].z}`);
-      await server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`);
-      await server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`);
+        await server.util.tellRaw(`Warps available in the ${location.dimension}: ` + warpList, event.player, { color: 'gray' });
+      } else {
+        const warp = event.args[0];
+        if (!warps[location.dimension].hasOwnProperty(warp)) throw new PlayerError(`The warp ${warp} does not exist in the ${location.dimension}`);
 
+        lastLocations[event.player] = location;
+        await server.send(`tp ${event.player} ${warps[location.dimension][warp].x} ${warps[location.dimension][warp].y} ${warps[location.dimension][warp].z}`);
+        await server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`);
+        await server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`);
+      }
     } catch(e) { handler(e, event.player); }
   });
 
@@ -252,7 +256,7 @@ module.exports = function() {
       const toLoc = await server.util.getLocation(toPlayer);
       if (fromLoc.dimension !== toLoc.dimension) throw new PlayerError(`Cannot teleport across dimensions, ${toPlayer} is in the ${toLoc.dimension}`);
 
-      tpRequests[toPlayer] = {
+      tpRequests[toPlayer.toLowerCase()] = {
         type: 'tpa',
         player: fromPlayer,
         timestamp: Date.now()
@@ -274,7 +278,7 @@ module.exports = function() {
       const toLoc = await server.util.getLocation(toPlayer);
       if (fromLoc.dimension !== toLoc.dimension) throw new PlayerError(`Cannot teleport across dimensions, ${toPlayer} is in the ${toLoc.dimension}`);
 
-      tpRequests[toPlayer] = {
+      tpRequests[toPlayer.toLowerCase()] = {
         type: 'tpahere',
         player: fromPlayer,
         timestamp: Date.now()
@@ -288,9 +292,9 @@ module.exports = function() {
   server.command('tpdeny', async (event) => {
     try {
       if (!config.tpa) throw new PlayerError('Teleport requests are not enabled on this server');
-      const req = tpRequests[event.player];
+      const req = tpRequests[event.player.toLowerCase()];
       if (!req || Date.now() - req.timestamp > 120000) throw new PlayerError('No valid tp requests');
-      delete tpRequests[event.player];
+      delete tpRequests[event.player.toLowerCase()];
 
       await server.util.tellRaw(`${req.type} to ${event.player} denied`, req.player, { color: 'gray' });
       await server.util.tellRaw(`${req.type} from ${req.player} denied`, event.player, { color: 'gray'});
@@ -300,7 +304,7 @@ module.exports = function() {
   server.command('tpaccept', async (event) => {
     try {
       if (!config.tpa) throw new PlayerError('Teleport requests are not enabled on this server');
-      const req = tpRequests[event.player];
+      const req = tpRequests[event.player.toLowerCase()];
       if (!req || Date.now() - req.timestamp > 120000) throw new PlayerError('No valid tp requests');
       const t = { player: event.player };
       const f = { player: req.player };
@@ -321,6 +325,7 @@ module.exports = function() {
         lastLocations[t.player] = t.loc;
       }
 
+      delete tpRequests[event.player.toLowerCase()];
       await server.util.tellRaw(t.message, t.player, { color: 'gray' });
       await server.util.tellRaw(f.message, f.player, { color: 'gray' });
       await server.util.wait(4000);
