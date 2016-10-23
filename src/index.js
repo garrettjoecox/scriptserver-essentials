@@ -107,7 +107,7 @@ module.exports = function() {
       }
 
       await server.JSON.set(event.player, 'home', homes);
-      await server.util.tellRaw(`Home${home === 'default' ? '' : ' ' + home} set in ${location.dimension}`);
+      await server.util.tellRaw(`Home${home === 'default' ? '' : ' ' + home} set in ${location.dimension}`, event.player, { color: 'gray'});
     } catch(e) { handler(e, event.player); }
   });
 
@@ -125,7 +125,7 @@ module.exports = function() {
       delete homes[location.dimension][home];
 
       await server.JSON.set(event.player, 'home', homes);
-      await server.util.tellRaw(`Home${home === 'default' ? '' : ' ' + home} removed in ${location.dimension}`);
+      await server.util.tellRaw(`Home${home === 'default' ? '' : ' ' + home} removed in ${location.dimension}`, event.player, { color: 'gray'});
     } catch(e) { handler(e, event.player); }
   });
 
@@ -194,7 +194,7 @@ module.exports = function() {
       warps[location.dimension][warp] = location;
 
       await server.JSON.set('world', 'warp', warps);
-      await server.util.tellRaw(`Warp ${warp} set in ${location.dimension}`);
+      await server.util.tellRaw(`Warp ${warp} set in ${location.dimension}`, event.player, { color: 'gray'});
     } catch(e) { handler(e, event.player); }
   });
 
@@ -215,7 +215,7 @@ module.exports = function() {
       delete warps[location.dimension][warp];
 
       await server.JSON.set('world', 'warp', warps);
-      await server.util.tellRaw(`Warp ${warp} removed in ${location.dimension}`);
+      await server.util.tellRaw(`Warp ${warp} removed in ${location.dimension}`, event.player, { color: 'gray'});
     } catch(e) { handler(e, event.player); }
   });
 
@@ -356,7 +356,7 @@ module.exports = function() {
 
   server.command('day', async (event) => {
     try {
-      if (!config.day) throw new PlayerError('Day votes are not enabled on this server');
+      if (!config.day.enabled) throw new PlayerError('Day votes are not enabled on this server');
       const amount = await server.util.getOnlineAmount();
 
       if (!voted.day.hasOwnProperty(event.player)) {
@@ -377,7 +377,7 @@ module.exports = function() {
 
   server.command('night', async (event) => {
     try {
-      if (!config.night) throw new PlayerError('Night votes are not enabled on this server');
+      if (!config.night.enabled) throw new PlayerError('Night votes are not enabled on this server');
       const amount = await server.util.getOnlineAmount();
 
       if (!voted.night.hasOwnProperty(event.player)) {
@@ -398,7 +398,7 @@ module.exports = function() {
 
   server.command('weather', async (event) => {
     try {
-      if (!config.weather) throw new PlayerError('Weather votes are not enabled on this server');
+      if (!config.weather.enabled) throw new PlayerError('Weather votes are not enabled on this server');
       const amount = await server.util.getOnlineAmount();
 
       if (!voted.weather.hasOwnProperty(event.player)) {
