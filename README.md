@@ -104,6 +104,15 @@ This module provides the following commands to be used in the ingame chat:
 - `~back`
   Teleport back to a previous location (Remembers location from `spawn`, `tpa`, `warp`, and `home`)
 
+- `~day`
+  Start a vote for setting the time to day.
+
+- `~night`
+  Start a vote for setting the time to night.
+
+- `~weather`
+  Start a vote for toggling downfall.
+
 ## This ScriptServer module uses:
   - [scriptserver-command](https://github.com/garrettjoecox/scriptserver-command)
   - [scriptserver-util](https://github.com/garrettjoecox/scriptserver-util)
