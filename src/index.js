@@ -339,6 +339,7 @@ module.exports = function() {
 
   server.command('back', async (event) => {
     try {
+      if (!config.back) throw new PlayerError('Back is not enabled on this server');
       if (!lastLocations.hasOwnProperty(event.player)) throw new PlayerError('No known last location');
       const location = await server.util.getLocation(event.player);
       const lastLoc = lastLocations[event.player];
