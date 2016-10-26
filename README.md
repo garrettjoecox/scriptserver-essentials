@@ -20,7 +20,7 @@ Each feature is configuration driven, pass in a configuration object as the thir
 
 The following is the default configuration:
 ```javascript
-const server = new ScriptServer('snapshot', ['-Xmx2048M'], {
+const server = new ScriptServer({
   essentials: {
     motd: {
       enabled: true,
