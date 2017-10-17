@@ -1,0 +1,14 @@
+{
+  "extends": "airbnb-base",
+  "rules": {
+    "func-names": "off",
+    "no-param-reassign": "off",
+    "prefer-template": "off",
+    "no-use-before-define": "off",
+    "no-confusing-arrow": "off",
+    "no-multi-assign": "off",
+    "global-require": "off",
+    "no-template-curly-in-string": "off",
+    "no-prototype-builtins": "off"
+  }
+}

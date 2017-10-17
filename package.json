@@ -1,37 +1,31 @@
 {
   "name": "scriptserver-essentials",
-  "version": "0.1.7",
+  "version": "1.0.0",
   "description": "Addon for scriptserver with essential server commands like home and tpa",
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "babel src -d dist"
-  },
+  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/garrettjoecox/scriptserver-essentials.git"
   },
   "author": "Garrett Cox <garrettjcox@gmail.com> (http://garrettcox.io)",
-  "license": "ISC",
+  "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/garrettjoecox/scriptserver-essentials/issues"
   },
-  "babel": {
-    "presets": ["latest"],
-    "plugins": ["transform-runtime"]
-  },
   "homepage": "https://github.com/garrettjoecox/scriptserver-essentials#readme",
   "dependencies": {
-    "babel-runtime": "^6.11.6",
     "lodash": "^4.16.4",
-    "scriptserver-command": "*",
-    "scriptserver-event": "*",
-    "scriptserver-json": "*",
-    "scriptserver-util": "*"
+    "scriptserver-command": "^1.0.0",
+    "scriptserver-event": "^1.0.0",
+    "scriptserver-json": "^1.0.0",
+    "scriptserver-util": "^1.0.0"
+  },
+  "peerDependencies": {
+    "scriptserver": "^1.0.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.16.0",
-    "babel-plugin-transform-runtime": "^6.15.0",
-    "babel-polyfill": "^6.16.0",
-    "babel-preset-latest": "^6.16.0"
+    "eslint": "^4.9.0",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.7.0"
   }
 }
