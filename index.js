@@ -35,7 +35,7 @@ module.exports = function () {
         'iron_shovel',
         'iron_axe',
         'iron_sword',
-        'bed',
+        'red_bed',
         'bread 32',
       ],
     },
@@ -88,20 +88,19 @@ module.exports = function () {
       const location = await server.util.getLocation(event.player);
       let homes = await server.JSON.get(event.player, 'home');
       homes = homes || {};
-      homes[location.dimension] = homes[location.dimension] || {};
 
-      if (homes[location.dimension].hasOwnProperty(home)) {
-        homes[location.dimension][home] = location;
+      if (homes.hasOwnProperty(home)) {
+        homes[home] = location;
       } else {
-        if (Object.keys(homes[location.dimension]).length >= config.home.amount) { // eslint-disable-line
-          throw new PlayerError('Home limit hit, try deleting another home first');
+        if (Object.keys(homes).length >= config.home.amount) { // eslint-disable-line
+          throw new PlayerError('Home limit reached, try deleting another home first');
         } else {
-          homes[location.dimension][home] = location;
+          homes[home] = location;
         }
       }
 
       await server.JSON.set(event.player, 'home', homes);
-      await server.util.tellRaw(`Home${home === 'default' ? '' : ' ' + home} set in ${location.dimension}`, event.player, { color: 'gray' });
+      await server.util.tellRaw(`Home${home === 'default' ? '' : ' ' + home} set`, event.player, { color: 'gray' });
     } catch (e) { handler(e, event.player); }
   });
 
@@ -109,17 +108,15 @@ module.exports = function () {
     try {
       if (!config.home.enabled) throw new PlayerError('Homes are not enabled on this server');
       const home = config.home.amount > 1 ? event.args[0] || 'default' : 'default';
-      const location = await server.util.getLocation(event.player);
       const homes = await server.JSON.get(event.player, 'home');
 
       if (!homes) throw new PlayerError('You haven\'t set a home yet');
-      if (!homes.hasOwnProperty(location.dimension)) throw new PlayerError(`You haven't set a home in the ${location.dimension} yet`);
-      if (!homes[location.dimension].hasOwnProperty(home)) throw new PlayerError(`You haven't set a home ${home} in the ${location.dimension}`);
+      if (!homes.hasOwnProperty(home)) throw new PlayerError(`You haven't set a home ${home}`);
 
-      delete homes[location.dimension][home];
+      delete homes[home];
 
       await server.JSON.set(event.player, 'home', homes);
-      await server.util.tellRaw(`Home${home === 'default' ? '' : ' ' + home} removed in ${location.dimension}`, event.player, { color: 'gray' });
+      await server.util.tellRaw(`Home${home === 'default' ? '' : ' ' + home} removed`, event.player, { color: 'gray' });
     } catch (e) { handler(e, event.player); }
   });
 
@@ -131,13 +128,10 @@ module.exports = function () {
       const homes = await server.JSON.get(event.player, 'home');
 
       if (!homes) throw new PlayerError('You haven\'t set a home yet');
-      if (!homes.hasOwnProperty(location.dimension)) throw new PlayerError(`You haven't set a home in the ${location.dimension} yet`);
-      if (!homes[location.dimension].hasOwnProperty(home)) throw new PlayerError(`You haven't set a home ${home} in the ${location.dimension}`);
+      if (!homes.hasOwnProperty(home)) throw new PlayerError(`You haven't set a home ${home}`);
 
       lastLocations[event.player] = location;
-      await server.send(`tp ${event.player} ${homes[location.dimension][home].x} ${homes[location.dimension][home].y} ${homes[location.dimension][home].z}`);
-      await server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`);
-      await server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`);
+      await server.util.teleport(event.player, homes[home]);
     } catch (e) { handler(e, event.player); }
   });
 
@@ -165,9 +159,7 @@ module.exports = function () {
       if (!spawns.hasOwnProperty(location.dimension)) throw new PlayerError(`Spawn has not been set in the ${location.dimension} yet`);
 
       lastLocations[event.player] = location;
-      await server.send(`tp ${event.player} ${spawns[location.dimension].x} ${spawns[location.dimension].y} ${spawns[location.dimension].z}`);
-      await server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`);
-      await server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`);
+      await server.util.teleport(event.player, spawns[location.dimension]);
     } catch (e) { handler(e, event.player); }
   });
 
@@ -181,11 +173,10 @@ module.exports = function () {
       const location = await server.util.getLocation(event.player);
       const warps = await server.JSON.get('world', 'warp') || {};
 
-      warps[location.dimension] = warps[location.dimension] || {};
-      warps[location.dimension][warp] = location;
+      warps[warp] = location;
 
       await server.JSON.set('world', 'warp', warps);
-      await server.util.tellRaw(`Warp ${warp} set in ${location.dimension}`, event.player, { color: 'gray' });
+      await server.util.tellRaw(`Warp ${warp} set`, event.player, { color: 'gray' });
     } catch (e) { handler(e, event.player); }
   });
 
@@ -196,17 +187,15 @@ module.exports = function () {
       if (!event.args[0]) throw new PlayerError('Please provide the name of the warp to delete');
       const warp = event.args[0];
 
-      const location = await server.util.getLocation(event.player);
       const warps = await server.JSON.get('world', 'warp');
 
       if (!warps) throw new PlayerError('You haven\'t set a warp yet');
-      if (!warps.hasOwnProperty(location.dimension)) throw new PlayerError(`You haven't set a warp in the ${location.dimension} yet`);
-      if (!warps[location.dimension].hasOwnProperty(warp)) throw new PlayerError(`You haven't set a warp ${warp} in the ${location.dimension}`);
+      if (!warps.hasOwnProperty(warp)) throw new PlayerError(`You haven't set a warp ${warp}`);
 
-      delete warps[location.dimension][warp];
+      delete warps[warp];
 
       await server.JSON.set('world', 'warp', warps);
-      await server.util.tellRaw(`Warp ${warp} removed in ${location.dimension}`, event.player, { color: 'gray' });
+      await server.util.tellRaw(`Warp ${warp} removed`, event.player, { color: 'gray' });
     } catch (e) { handler(e, event.player); }
   });
 
@@ -217,19 +206,16 @@ module.exports = function () {
       const warps = await server.JSON.get('world', 'warp');
 
       if (!warps) throw new PlayerError('No warps have been created yet');
-      if (!warps.hasOwnProperty(location.dimension)) throw new PlayerError(`No warps have been created in the ${location.dimension}`);
       if (!event.args[0]) {
-        const warpList = Object.keys(warps[location.dimension]).join(', ');
+        const warpList = Object.keys(warps).join(', ');
 
-        await server.util.tellRaw(`Warps available in the ${location.dimension}: ` + warpList, event.player, { color: 'gray' });
+        await server.util.tellRaw('Warps available: ' + warpList, event.player, { color: 'gray' });
       } else {
         const warp = event.args[0];
-        if (!warps[location.dimension].hasOwnProperty(warp)) throw new PlayerError(`The warp ${warp} does not exist in the ${location.dimension}`);
+        if (!warps.hasOwnProperty(warp)) throw new PlayerError(`The warp ${warp} does not exist`);
 
         lastLocations[event.player] = location;
-        await server.send(`tp ${event.player} ${warps[location.dimension][warp].x} ${warps[location.dimension][warp].y} ${warps[location.dimension][warp].z}`);
-        await server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`);
-        await server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`);
+        await server.util.teleport(event.player, warps[warp]);
       }
     } catch (e) { handler(e, event.player); }
   });
@@ -242,9 +228,6 @@ module.exports = function () {
       const toPlayer = event.args[0];
       if (!toPlayer) throw new PlayerError('Please specify a player to send the request to');
       if (!await server.util.isOnline(toPlayer)) throw new PlayerError(`${toPlayer} is not online`);
-      const fromLoc = await server.util.getLocation(fromPlayer);
-      const toLoc = await server.util.getLocation(toPlayer);
-      if (fromLoc.dimension !== toLoc.dimension) throw new PlayerError(`Cannot teleport across dimensions, ${toPlayer} is in the ${toLoc.dimension}`);
 
       tpRequests[toPlayer.toLowerCase()] = {
         type: 'tpa',
@@ -264,9 +247,6 @@ module.exports = function () {
       const toPlayer = event.args[0];
       if (!toPlayer) throw new PlayerError('Please specify a player to send the request to');
       if (!await server.util.isOnline(toPlayer)) throw new PlayerError(`${toPlayer} is not online`);
-      const fromLoc = await server.util.getLocation(fromPlayer);
-      const toLoc = await server.util.getLocation(toPlayer);
-      if (fromLoc.dimension !== toLoc.dimension) throw new PlayerError(`Cannot teleport across dimensions, ${toPlayer} is in the ${toLoc.dimension}`);
 
       tpRequests[toPlayer.toLowerCase()] = {
         type: 'tpahere',
@@ -296,32 +276,33 @@ module.exports = function () {
       if (!config.tpa) throw new PlayerError('Teleport requests are not enabled on this server');
       const req = tpRequests[event.player.toLowerCase()];
       if (!req || Date.now() - req.timestamp > 120000) throw new PlayerError('No valid tp requests');
-      const t = { player: event.player };
-      const f = { player: req.player };
-      t.loc = await server.util.getLocation(t.player);
-      f.loc = await server.util.getLocation(f.player);
-
-      if (t.loc.dimension !== f.loc.dimension) throw new PlayerError(`Cannot telepot across dimensions, ${f.player} is in the ${f.loc.dimension}`);
+      const to = {
+        player: event.player,
+        location: await server.util.getLocation(event.player),
+      };
+      const from = {
+        player: req.player,
+        location: await server.util.getLocation(req.player),
+      };
 
       if (req.type === 'tpa') {
-        t.message = `tpa accepted, teleporting ${f.player} here in 3 seconds...`;
-        f.message = `tpa accepted, teleporting to ${t.player} in 3 seconds...`;
-        req.command = `tp ${f.player} ${t.player}`;
-        lastLocations[f.player] = f.loc;
+        await server.util.tellRaw(`tpa accepted, teleporting ${from.player} here in 3 seconds...`, to.player, { color: 'gray' });
+        await server.util.tellRaw(`tpa accepted, teleporting to ${to.player} in 3 seconds...`, from.player, { color: 'gray' });
+        req.command = `tp ${from.player} ${to.player}`;
+        lastLocations[from.player] = from.locaction;
       } else {
-        t.message = `tpahere accepted, teleporting to ${f.player} in 3 seconds...`;
-        f.message = `tpahere accepted, teleporting ${t.player} here in 3 seconds...`;
-        req.command = `tp ${t.player} ${f.player}`;
-        lastLocations[t.player] = t.loc;
+        await server.util.tellRaw(`tpa accepted, teleporting to ${from.player} in 3 seconds...`, to.player, { color: 'gray' });
+        await server.util.tellRaw(`tpa accepted, teleporting ${to.player} here in 3 seconds...`, from.player, { color: 'gray' });
+        req.command = `tp ${to.player} ${from.player}`;
+        lastLocations[to.player] = to.location;
       }
 
       delete tpRequests[event.player.toLowerCase()];
-      await server.util.tellRaw(t.message, t.player, { color: 'gray' });
-      await server.util.tellRaw(f.message, f.player, { color: 'gray' });
+
       await server.util.wait(4000);
       await server.send(req.command);
-      await server.send(`execute ${req.type === 'tpa' ? f.player : t.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`);
-      await server.send(`playsound entity.item.pickup master ${req.type === 'tpa' ? f.player : t.player} ~ ~ ~ 10 1 1`);
+      await server.send(`execute at ${req.type === 'tpa' ? from.player : to.player} run particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`);
+      await server.send('playsound entity.item.pickup master @a ~ ~ ~ 10 1 1');
     } catch (e) { handler(e, event.player); }
   });
 
@@ -333,12 +314,9 @@ module.exports = function () {
       const location = await server.util.getLocation(event.player);
       const lastLoc = lastLocations[event.player];
 
-      if (location.dimension !== lastLoc.dimension) throw new PlayerError(`Last known location in the ${lastLoc.dimension}, can't do that`);
       lastLocations[event.player] = location;
 
-      await server.send(`tp ${event.player} ${lastLoc.x} ${lastLoc.y} ${lastLoc.z}`);
-      await server.send(`execute ${event.player} ~ ~ ~ particle cloud ~ ~1 ~ 1 1 1 0.1 100 force`);
-      await server.send(`playsound entity.item.pickup master ${event.player} ~ ~ ~ 10 1 1`);
+      await server.util.teleport(event.player, lastLoc);
     } catch (e) { handler(e, event.player); }
   });
 
@@ -346,14 +324,13 @@ module.exports = function () {
   server.command('day', async (event) => {
     try {
       if (!config.day.enabled) throw new PlayerError('Day votes are not enabled on this server');
-      const amount = await server.util.getOnlineAmount();
+      const online = await server.util.getOnline();
 
       if (!voted.day.hasOwnProperty(event.player)) {
         voted.day[event.player] = true;
         votes.day += 1;
       }
-
-      if (votes.day >= (amount * (config.day.percent / 100))) {
+      if (votes.day >= (online.online * (config.day.percent / 100))) {
         votes.day = 0;
         voted.day = {};
         await server.send('time set 1000');
@@ -367,14 +344,14 @@ module.exports = function () {
   server.command('night', async (event) => {
     try {
       if (!config.night.enabled) throw new PlayerError('Night votes are not enabled on this server');
-      const amount = await server.util.getOnlineAmount();
+      const online = await server.util.getOnline();
 
       if (!voted.night.hasOwnProperty(event.player)) {
         voted.night[event.player] = true;
         votes.night += 1;
       }
 
-      if (votes.night >= (amount * (config.night.percent / 100))) {
+      if (votes.night >= (online.online * (config.night.percent / 100))) {
         votes.night = 0;
         voted.night = {};
         await server.send('time set 14000');
@@ -388,18 +365,18 @@ module.exports = function () {
   server.command('weather', async (event) => {
     try {
       if (!config.weather.enabled) throw new PlayerError('Weather votes are not enabled on this server');
-      const amount = await server.util.getOnlineAmount();
+      const online = await server.util.getOnline();
 
       if (!voted.weather.hasOwnProperty(event.player)) {
         voted.weather[event.player] = true;
         votes.weather += 1;
       }
 
-      if (votes.weather >= (amount * (config.weather.percent / 100))) {
+      if (votes.weather >= (online.online * (config.weather.percent / 100))) {
         votes.weather = 0;
         voted.weather = {};
-        await server.send('toggledownfall');
-        await server.util.tellRaw(`Voters exceed or equal ${config.weather.percent}% of players, toggling downfall`, '@a', { color: 'gray' });
+        await server.send('weather clear');
+        await server.util.tellRaw(`Voters exceed or equal ${config.weather.percent}% of players, clearing weather`, '@a', { color: 'gray' });
       } else if (votes.weather === 1) {
         await server.util.tellRaw('Weather vote started, use ~weather to vote!', '@a', { color: 'gray' });
       }
