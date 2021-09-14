@@ -1,7 +1,7 @@
 {
   "name": "scriptserver-essentials",
-  "version": "1.1.0",
-  "description": "Addon for scriptserver with essential server commands like home and tpa",
+  "version": "1.1.1",
+  "description": "Deprecated - Moved to @scriptserver/essentials",
   "main": "index.js",
   "repository": {
     "type": "git",

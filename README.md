@@ -1,4 +1,4 @@
-scriptserver-essentials
+Deprecated - Moved to @scriptserver/essentials
 ===================
 
 [![](http://i.imgur.com/zhptNme.png)](https://github.com/garrettjoecox/scriptserver)
